@@ -66,45 +66,36 @@ jobs:
 
           & $gpp strdef.cpp -c -std=c++11 -m64 -o strdef_64.o
           if ($LASTEXITCODE -ne 0) { throw "strdef.cpp compile failed" }
+      - name: Build pb64.exe
+        shell: msys2 {0}
+        run: |
+          cd "$(cygpath -u "$V13_PATH")"
 
-          & $gpp main.cpp -c -std=c++11 -m64 -o main_64.o
-          if ($LASTEXITCODE -ne 0) { throw "main.cpp compile failed" }
+          g++ globldef.c -c -std=c++11 -m64 -o globldef_64.o
+          g++ cstrdef.c -c -std=c++11 -m64 -o cstrdef_64.o
+          g++ thread.c -c -std=c++11 -m64 -o thread_64.o
+          g++ strdef.cpp -c -std=c++11 -m64 -o strdef_64.o
+          g++ main.cpp -c -std=c++11 -m64 -o main_64.o
+          g++ AudioPB.cpp -c -std=c++11 -m64 -o AudioPB_64.o
+          g++ AudioPB_i16.cpp -c -std=c++11 -m64 -o AudioPB_i16_64.o
+          g++ AudioPB_i24.cpp -c -std=c++11 -m64 -o AudioPB_i24_64.o
 
-          & $gpp AudioPB.cpp -c -std=c++11 -m64 -o AudioPB_64.o
-          if ($LASTEXITCODE -ne 0) { throw "AudioPB.cpp compile failed" }
-
-          & $gpp AudioPB_i16.cpp -c -std=c++11 -m64 -o AudioPB_i16_64.o
-          if ($LASTEXITCODE -ne 0) { throw "AudioPB_i16.cpp compile failed" }
-
-          & $gpp AudioPB_i24.cpp -c -std=c++11 -m64 -o AudioPB_i24_64.o
-          if ($LASTEXITCODE -ne 0) { throw "AudioPB_i24.cpp compile failed" }
-
-          & $gpp `
-            main_64.o `
-            globldef_64.o `
-            cstrdef_64.o `
-            thread_64.o `
-            strdef_64.o `
-            AudioPB_64.o `
-            AudioPB_i16_64.o `
-            AudioPB_i24_64.o `
-            -lole32 `
-            -lksuser `
-            -mwindows `
-            -m64 `
+          g++ \
+            main_64.o \
+            globldef_64.o \
+            cstrdef_64.o \
+            thread_64.o \
+            strdef_64.o \
+            AudioPB_64.o \
+            AudioPB_i16_64.o \
+            AudioPB_i24_64.o \
+            -lole32 \
+            -lksuser \
+            -mwindows \
+            -m64 \
             -o pb64.exe
 
-          if ($LASTEXITCODE -ne 0) {
-            throw "linking pb64.exe failed"
-          }
-
-          if (-not (Test-Path "pb64.exe")) {
-            throw "pb64.exe was not created"
-          }
-
-          Write-Host "========================================"
-          Write-Host "pb64.exe built successfully"
-          Write-Host "========================================"
+          test -f pb64.exe
 
       - name: Upload pb64.exe
         uses: actions/upload-artifact@v4
