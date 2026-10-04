@@ -34,14 +34,14 @@ jobs:
             Select-Object -First 1
 
           if (-not $v13) {
-            throw "找不到 v1.3 源码目录"
+            throw "v1.3 source directory not found"
           }
 
           "V13_PATH=$($v13.FullName)" | Out-File `
             -FilePath $env:GITHUB_ENV `
             -Append
 
-          Write-Host "找到 v1.3："
+          Write-Host "Found v1.3:"
           Write-Host $v13.FullName
 
       - name: Build pb64.exe
@@ -50,34 +50,34 @@ jobs:
           $gpp = "C:\msys64\ucrt64\bin\g++.exe"
 
           if (-not (Test-Path $gpp)) {
-            throw "找不到 MinGW g++.exe"
+            throw "g++.exe not found"
           }
 
           Set-Location "$env:V13_PATH"
 
           & $gpp globldef.c -c -std=c++11 -m64 -o globldef_64.o
-          if ($LASTEXITCODE -ne 0) { throw "globldef.c 编译失败" }
+          if ($LASTEXITCODE -ne 0) { throw "globldef.c compile failed" }
 
           & $gpp cstrdef.c -c -std=c++11 -m64 -o cstrdef_64.o
-          if ($LASTEXITCODE -ne 0) { throw "cstrdef.c 编译失败" }
+          if ($LASTEXITCODE -ne 0) { throw "cstrdef.c compile failed" }
 
           & $gpp thread.c -c -std=c++11 -m64 -o thread_64.o
-          if ($LASTEXITCODE -ne 0) { throw "thread.c 编译失败" }
+          if ($LASTEXITCODE -ne 0) { throw "thread.c compile failed" }
 
           & $gpp strdef.cpp -c -std=c++11 -m64 -o strdef_64.o
-          if ($LASTEXITCODE -ne 0) { throw "strdef.cpp 编译失败" }
+          if ($LASTEXITCODE -ne 0) { throw "strdef.cpp compile failed" }
 
           & $gpp main.cpp -c -std=c++11 -m64 -o main_64.o
-          if ($LASTEXITCODE -ne 0) { throw "main.cpp 编译失败" }
+          if ($LASTEXITCODE -ne 0) { throw "main.cpp compile failed" }
 
           & $gpp AudioPB.cpp -c -std=c++11 -m64 -o AudioPB_64.o
-          if ($LASTEXITCODE -ne 0) { throw "AudioPB.cpp 编译失败" }
+          if ($LASTEXITCODE -ne 0) { throw "AudioPB.cpp compile failed" }
 
           & $gpp AudioPB_i16.cpp -c -std=c++11 -m64 -o AudioPB_i16_64.o
-          if ($LASTEXITCODE -ne 0) { throw "AudioPB_i16.cpp 编译失败" }
+          if ($LASTEXITCODE -ne 0) { throw "AudioPB_i16.cpp compile failed" }
 
           & $gpp AudioPB_i24.cpp -c -std=c++11 -m64 -o AudioPB_i24_64.o
-          if ($LASTEXITCODE -ne 0) { throw "AudioPB_i24.cpp 编译失败" }
+          if ($LASTEXITCODE -ne 0) { throw "AudioPB_i24.cpp compile failed" }
 
           & $gpp `
             main_64.o `
@@ -95,15 +95,15 @@ jobs:
             -o pb64.exe
 
           if ($LASTEXITCODE -ne 0) {
-            throw "链接 pb64.exe 失败"
+            throw "linking pb64.exe failed"
           }
 
           if (-not (Test-Path "pb64.exe")) {
-            throw "没有生成 pb64.exe"
+            throw "pb64.exe was not created"
           }
 
           Write-Host "========================================"
-          Write-Host "成功生成 pb64.exe"
+          Write-Host "pb64.exe built successfully"
           Write-Host "========================================"
 
       - name: Upload pb64.exe
