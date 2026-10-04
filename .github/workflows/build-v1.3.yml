@@ -1,0 +1,113 @@
+name: Build AudioPB v1.3
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install MinGW-w64
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: mingw-w64-ucrt-x86_64-gcc
+
+      - name: Extract source ZIP
+        shell: powershell
+        run: |
+          Expand-Archive `
+            -Path "$env:GITHUB_WORKSPACE\AudioPB-v1.3-GitHub-Build.zip" `
+            -DestinationPath "$env:GITHUB_WORKSPACE\source" `
+            -Force
+
+          $v13 = Get-ChildItem `
+            -Path "$env:GITHUB_WORKSPACE\source" `
+            -Directory `
+            -Recurse `
+            -Filter "v1.3" |
+            Select-Object -First 1
+
+          if (-not $v13) {
+            throw "找不到 v1.3 源码目录"
+          }
+
+          "V13_PATH=$($v13.FullName)" | Out-File `
+            -FilePath $env:GITHUB_ENV `
+            -Append
+
+          Write-Host "找到 v1.3："
+          Write-Host $v13.FullName
+
+      - name: Build pb64.exe
+        shell: powershell
+        run: |
+          $gpp = "C:\msys64\ucrt64\bin\g++.exe"
+
+          if (-not (Test-Path $gpp)) {
+            throw "找不到 MinGW g++.exe"
+          }
+
+          Set-Location "$env:V13_PATH"
+
+          & $gpp globldef.c -c -std=c++11 -m64 -o globldef_64.o
+          if ($LASTEXITCODE -ne 0) { throw "globldef.c 编译失败" }
+
+          & $gpp cstrdef.c -c -std=c++11 -m64 -o cstrdef_64.o
+          if ($LASTEXITCODE -ne 0) { throw "cstrdef.c 编译失败" }
+
+          & $gpp thread.c -c -std=c++11 -m64 -o thread_64.o
+          if ($LASTEXITCODE -ne 0) { throw "thread.c 编译失败" }
+
+          & $gpp strdef.cpp -c -std=c++11 -m64 -o strdef_64.o
+          if ($LASTEXITCODE -ne 0) { throw "strdef.cpp 编译失败" }
+
+          & $gpp main.cpp -c -std=c++11 -m64 -o main_64.o
+          if ($LASTEXITCODE -ne 0) { throw "main.cpp 编译失败" }
+
+          & $gpp AudioPB.cpp -c -std=c++11 -m64 -o AudioPB_64.o
+          if ($LASTEXITCODE -ne 0) { throw "AudioPB.cpp 编译失败" }
+
+          & $gpp AudioPB_i16.cpp -c -std=c++11 -m64 -o AudioPB_i16_64.o
+          if ($LASTEXITCODE -ne 0) { throw "AudioPB_i16.cpp 编译失败" }
+
+          & $gpp AudioPB_i24.cpp -c -std=c++11 -m64 -o AudioPB_i24_64.o
+          if ($LASTEXITCODE -ne 0) { throw "AudioPB_i24.cpp 编译失败" }
+
+          & $gpp `
+            main_64.o `
+            globldef_64.o `
+            cstrdef_64.o `
+            thread_64.o `
+            strdef_64.o `
+            AudioPB_64.o `
+            AudioPB_i16_64.o `
+            AudioPB_i24_64.o `
+            -lole32 `
+            -lksuser `
+            -mwindows `
+            -m64 `
+            -o pb64.exe
+
+          if ($LASTEXITCODE -ne 0) {
+            throw "链接 pb64.exe 失败"
+          }
+
+          if (-not (Test-Path "pb64.exe")) {
+            throw "没有生成 pb64.exe"
+          }
+
+          Write-Host "========================================"
+          Write-Host "成功生成 pb64.exe"
+          Write-Host "========================================"
+
+      - name: Upload pb64.exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: AudioPB-v1.3-pb64
+          path: ${{ env.V13_PATH }}/pb64.exe
